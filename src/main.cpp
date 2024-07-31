@@ -7,7 +7,18 @@
 /* Program entry point */
 int main( int ArgC, char *ArgV[] )
 {
-  anim::anim Anim {};
+  try
+  {
+    anim::anim Anim {};
+  }
+  catch (std::runtime_error &)
+  {
+    return 1;
+  }
+  catch (...)
+  {
+    return -1;
+  }
 
   return 0;
 } /* End of 'main' function */
