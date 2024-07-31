@@ -34,3 +34,6 @@
 # Visual Studio temporary files
 .vs/
 *.vcxproj.user
+
+# Build results
+out/
