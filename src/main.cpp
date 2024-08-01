@@ -2,7 +2,7 @@
 
 #include "def.h"
 
-#include "anim.hpp"
+#include "anim/anim.hpp"
 
 /* Program entry point */
 int main( int ArgC, char *ArgV[] )

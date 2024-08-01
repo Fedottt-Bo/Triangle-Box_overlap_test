@@ -31,7 +31,7 @@ namespace anim
   {
   private:
     /* Two main classes - window and render */
-    win::win Win;
+    win::window Win;
     render Render;
 
     /* Mainloop and it's separate thread wrapper */

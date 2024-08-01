@@ -9,6 +9,9 @@
 /* Miltithreading */
 #include <thread>
 #include <semaphore>
+#include <mutex>
+
+/* Utility */
 #include <format>
 
 /* END OF 'def.h' FILE */
