@@ -1,5 +1,8 @@
 /* "win.hpp" - Win32 windows handling file */
 
+#ifndef __win_hpp__
+#define __win_hpp__
+
 #include <def.h>
 
 #include <Windows.h>
@@ -29,6 +32,8 @@ namespace anim::win
 
     /* Destructor */
     ~window( void );
+
+    
   }; /* end of 'window' class */
 
   /* Shared windows' data handling class */
@@ -308,7 +313,7 @@ namespace anim::win
    *   - Name of created window:
    *       std::string_view WindowName
    */
-  window::window( const std::wstring_view WindowName )
+  inline window::window( const std::wstring_view WindowName )
   {
     hWnd = shared_base::Get().CreateWindow(this, WindowName);
 
@@ -316,12 +321,14 @@ namespace anim::win
   } /* End of constructor */
 
   /* Destructor */
-  window::~window( void )
+  inline window::~window( void )
   {
     shared_base::Get().DestroyWindow(hWnd);
     WasInit.wait(true);
     hWnd = nullptr;
   } /* End of destructor */
 } /* end of 'anim::win' namespace */
+
+#endif /* __win_hpp__ */
 
 /* END OF 'win.hpp' FILE */

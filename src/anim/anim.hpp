@@ -1,5 +1,8 @@
 /* "anim.hpp" - Animation implementation file */
 
+#ifndef __anim_hpp__
+#define __anim_hpp__
+
 #include <def.h>
 
 // #include "box_triangle_overlap_test.hpp"
@@ -54,3 +57,7 @@ namespace anim
     } /* end of destructor */
   }; /* end of 'anim' class */
 } /* end of 'anim' namespace */
+
+#endif /* __anim_hpp__ */
+
+/* END OF 'anim.hpp' FILE */

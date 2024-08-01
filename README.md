@@ -3,4 +3,4 @@ Target platform: Windows x64 (AVX2 required)
 
 Visualisation by OpenGL and Win32 API.
 
-Simple for visualising slightly rewritten AABB-triangle overlap test by Tomas Akenine-Möller.
+Sample for visualising slightly rewritten AABB-triangle overlap test by Tomas Akenine-Möller.
