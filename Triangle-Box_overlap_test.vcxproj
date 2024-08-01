@@ -154,7 +154,7 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\anim.hpp" />
+    <ClInclude Include="src\anim\anim.hpp" />
     <ClInclude Include="src\anim\win.hpp" />
     <ClInclude Include="src\box_triangle_overlap_test.hpp" />
     <ClInclude Include="src\def.h" />

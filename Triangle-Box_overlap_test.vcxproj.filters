@@ -32,7 +32,7 @@
     <ClInclude Include="src\anim\win.hpp">
       <Filter>Source Files\anim</Filter>
     </ClInclude>
-    <ClInclude Include="src\anim.hpp">
+    <ClInclude Include="src\anim\anim.hpp">
       <Filter>Source Files\anim</Filter>
     </ClInclude>
   </ItemGroup>

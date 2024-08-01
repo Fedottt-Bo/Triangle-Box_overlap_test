@@ -4,7 +4,7 @@
 
 // #include "box_triangle_overlap_test.hpp"
 
-#include <anim/win.hpp>
+#include "win.hpp"
 
 namespace anim
 {
