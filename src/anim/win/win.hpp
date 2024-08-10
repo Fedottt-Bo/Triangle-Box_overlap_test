@@ -24,8 +24,7 @@
 
 #include "win_events.hpp"
 
-#include <Windows.h>
-#undef CreateWindow
+#include "win_def.h"
 
 /* Animation namespace // windows related namespace */
 namespace anim::win
@@ -227,7 +226,7 @@ namespace anim::win
       This->ThreadId.store(GetCurrentThreadId());
       This->ThreadId.notify_all();
 
-      while (TRUE)
+      while (true)
         if (MSG Msg; PeekMessageW(&Msg, nullptr, 0, 0, PM_REMOVE))
         {
           /* Stop loop on quit message */
