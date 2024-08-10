@@ -21,6 +21,7 @@
 /* Storage types */
 #include <string>
 
+
 /* Erorrs handling */
 #include <stdexcept>
 
@@ -31,6 +32,7 @@
 
 /* Utility */
 #include <format>
+#include <concepts>
 
 #endif /* __def_h__ */
 

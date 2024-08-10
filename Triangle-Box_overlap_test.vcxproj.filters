@@ -38,5 +38,8 @@
     <ClInclude Include="src\anim\win\win.hpp">
       <Filter>Source Files\anim\win</Filter>
     </ClInclude>
+    <ClInclude Include="src\anim\win\win_events.hpp">
+      <Filter>Source Files\anim\win</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

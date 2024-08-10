@@ -20,6 +20,10 @@
 
 #include <def.h>
 
+#include <deque>
+
+#include "win_events.hpp"
+
 #include <Windows.h>
 #undef CreateWindow
 
@@ -48,7 +52,47 @@ namespace anim::win
     /* Destructor */
     ~window( void );
 
-    
+  private:
+    std::mutex EventsSync {};
+    std::deque<events::any> EventsQueue {};
+    window_state State {};
+
+  public:
+    /* Event processing function
+     * ARGUMENTS:
+     *   - Callback. Takes event from std::visit and window state:
+     *       callable &&Callback;
+     * RETURNS:
+     *   (BOOL) Event existance flag.
+     */
+    template<class callable>
+      requires(
+        requires( callable &&Callback )
+        {
+          std::visit(std::declval<events::any>(), Callback,
+                     std::declval<const window_state &>());
+        }
+      )
+      BOOL ProcessEvent( callable &&Callback )
+      {
+        /* Read event or return as empty */
+        events::any Event {};
+        {
+          std::lock_guard EventsLock {EventsSync};
+
+          if (EventsQueue.empty())
+            return false;
+
+          Event = std::move(EventsQueue.front());
+          EventsQueue.pop_front();
+        }
+
+        std::visit(Event, Callback, State);
+
+        // State.Update(Event);
+
+        return true;
+      } /* End of 'ProcessEvent' function */
   }; /* end of 'window' class */
 
   /* Shared windows' data handling class */
