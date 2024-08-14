@@ -24,6 +24,7 @@
 
 #include <bitset>
 #include <variant>
+#include <optional>
 
 /* Animation namespace // windows related namespace */
 namespace anim::win
@@ -215,7 +216,7 @@ namespace anim::win
     struct resize
     {
       uint32_t NewWidth, NewHeight; // new size (zero indicates collapsing)
-      bool LastResize;              // Indicates that this resize event is the final size
+      bool IsLast;                  // Indicates that this resize event is the final size
     }; /* end of 'resize' structure */
   
     /* Button state change event */
@@ -231,11 +232,19 @@ namespace anim::win
       float MouseDX, MouseDY;     // Mouse move value
       float MouseNewX, MouseNewY; // Mouse new position
     }; /* end of 'mouse' structure */
+
+    /* Window closing request event */
+    struct close
+    {
+      // Empty :)
+    }; /* end of 'close' structure */
   
     using any = std::variant<
+        std::nullopt_t,
         resize,
         button,
-        mouse
+        mouse,
+        close
       >;
   } /* end of 'events' namespace */
 
@@ -302,11 +311,79 @@ namespace anim::win
   /* Events queue class */
   class events_queue
   {
+  private:
+    /* Basically just fully locking all resources and do not care */
+    std::mutex ResourcesSync {};             // Single syncronization primitive
+    std::deque<events::any> QueueStorage {}; // deque fullfills all our needs here
+    events::resize *LastResize {nullptr};    // Storing last resize to update corresponding flag
+
   public:
     /* Empty constructor */
     events_queue( void )
     {
-    }
+    } /* End of constructor */
+
+    /* Event appending function
+     * ARGUMENTS:
+     *   - Event:
+     *       events::any &&Event;
+     * RETURNS: None.
+     */
+    void Push( events::any &&Event )
+    {
+      std::visit(
+        [this]( auto &Event )
+        {
+          using event_type = std::remove_cvref_t<decltype(Event)>;
+
+          /* Quit if nullopt */
+          if constexpr (std::same_as<event_type, std::nullopt_t>)
+            return;
+
+          /* Lock */
+          std::lock_guard Lock {ResourcesSync};
+
+          /* Update flag and pointer for resize event */
+          if constexpr (std::same_as<event_type, events::resize>)
+          {
+            /* Ensure flag is correct */
+            Event.IsLast = true;
+
+            if (LastResize != nullptr)
+              LastResize->IsLast = false;
+
+            LastResize = &Event;
+          }
+
+          /* Add to queue */
+          QueueStorage.emplace_back(std::forward<events::any>(Event));
+        },
+        Event
+      );
+    } /* End of 'Push' function */
+
+    /* Event retrieving function
+     * ARGUMENTS:
+     *   - Event storage:
+     *       events::any &Event;
+     * RETURNS:
+     *   (bool) Event existence flag.
+     */
+    bool Pop( events::any &Event )
+    {
+      std::lock_guard Lock {ResourcesSync};
+
+      if (QueueStorage.empty())
+      {
+        Event.emplace<std::nullopt_t>(std::nullopt);
+        return false;
+      }
+
+      Event.swap(QueueStorage.front());
+      QueueStorage.pop_front();
+
+      return true;
+    } /* End of 'Pop' function */
   }; /* end of 'events_queue' class */
 } /* end of 'win' namespace */
 

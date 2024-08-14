@@ -52,8 +52,7 @@ namespace anim::win
     ~window( void );
 
   private:
-    std::mutex EventsSync {};
-    std::deque<events::any> EventsQueue {};
+    events_queue EventsQueue {};
     window_state State {};
 
   public:
@@ -62,33 +61,32 @@ namespace anim::win
      *   - Callback. Takes event from std::visit and window state:
      *       callable &&Callback;
      * RETURNS:
-     *   (BOOL) Event existance flag.
+     *   (bool) Event existence flag.
      */
     template<class callable>
-      requires(
-        requires( callable &&Callback )
-        {
-          std::visit(std::declval<events::any>(), Callback,
-                     std::declval<const window_state &>());
-        }
-      )
-      BOOL ProcessEvent( callable &&Callback )
+      bool ProcessEvent( callable &&Callback )
       {
         /* Read event or return as empty */
-        events::any Event {};
-        {
-          std::lock_guard EventsLock {EventsSync};
+        events::any Event {std::nullopt};
 
-          if (EventsQueue.empty())
-            return false;
+        if (!EventsQueue.Pop(Event))
+          return false;
 
-          Event = std::move(EventsQueue.front());
-          EventsQueue.pop_front();
-        }
+        std::visit(
+          [this, Callback]( auto &Event )
+          {
+            using event_type = std::remove_cvref_t<decltype(Event)>;
 
-        std::visit(Event, Callback, State);
+            if constexpr (!std::same_as<event_type, std::nullopt_t>)
+            {
+              Callback(Event, State);
 
-        // State.Update(Event);
+              if constexpr (requires( window_state State, event_type Event ){ State.Update(Event); })
+                State.Update(Event);
+            }
+          },
+          Event
+        );
 
         return true;
       } /* End of 'ProcessEvent' function */
@@ -173,8 +171,10 @@ namespace anim::win
           case WM_CLOSE:
             if (lParam != 30)
             {
-              // Maybe some cancellation
-              // return 1;
+              /* Send closing request */
+              Win->EventsQueue.Push(events::close {});
+
+              return 1;
             }
 
             [[fallthrough]];

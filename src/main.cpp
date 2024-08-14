@@ -24,7 +24,7 @@ int main( int ArgC, char *ArgV[] )
 {
   try
   {
-    anim::anim Anim {};
+    anim::animation Anim {};
   }
   catch (std::runtime_error &)
   {

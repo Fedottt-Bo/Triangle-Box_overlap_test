@@ -45,7 +45,7 @@ namespace anim
   }; /* end of 'mainloop_thread' class */
 
   /* Scene animation class */
-  class anim
+  class animation
   {
   private:
     /* Two main classes - window and render */
@@ -58,19 +58,33 @@ namespace anim
 
   public:
     /* The only constructor - default */
-    anim( void ) :
+    animation( void ) :
       Win {L"Triangle-Box overlap test output window"},
       Render {},
       Mainloop {},
       MainloopThread {}
     {
+      bool Run {true};
+
+      while (Run)
+        Win.ProcessEvent([this, &Run]( auto &Event, const win::window_state &State ) -> void
+          {
+            using event_type = std::remove_cvref_t<decltype(Event)>;
+
+            /* End mainloop on close event */
+            if constexpr (std::same_as<event_type, win::events::close>)
+            {
+              Run = false;
+              return;
+            }
+          });
     } /* end of constructor */
 
     /* Destructor */
-    ~anim( void )
+    ~animation( void )
     {
     } /* end of destructor */
-  }; /* end of 'anim' class */
+  }; /* end of 'animation' class */
 } /* end of 'anim' namespace */
 
 #endif /* __anim_hpp__ */
