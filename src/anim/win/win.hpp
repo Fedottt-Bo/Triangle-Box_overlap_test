@@ -56,74 +56,58 @@ namespace anim::win
     window_state State {};
 
   public:
-    /* Event processing function. Doesn't wait if no events are queued.
+    /* Event processing function.
      * ARGUMENTS:
      *   - Callback. Takes event from std::visit and window state:
      *       callable &&Callback;
+     *   - Waiting flag (default: false):
+     *       bool Wait;
      * RETURNS:
      *   (bool) Event existence flag.
      */
     template<class callable>
-      bool PeekEvent( callable &&Callback )
+      bool GetEvent( callable &&Callback, bool Wait = false )
       {
         /* Read event or return as empty */
         events::any Event {std::nullopt};
 
-        if (!EventsQueue.Pop(Event))
-          return false;
+        if (Wait)
+        {
+          if (!EventsQueue.PopWait(Event))
+            return false;
+        }
+        else
+        {
+          if (!EventsQueue.Pop(Event))
+            return false;
+        }
 
-        std::visit(
-          [this, Callback]( auto &Event )
+        return std::visit(
+          [this, Callback]( auto &Event ) -> bool
           {
             using event_type = std::remove_cvref_t<decltype(Event)>;
 
-            if constexpr (!std::same_as<event_type, std::nullopt_t>)
-            {
-              Callback(Event, State);
+            if constexpr (std::same_as<event_type, std::nullopt_t>)
+              return false;
 
-              if constexpr (requires( window_state State, event_type Event ){ State.Update(Event); })
-                State.Update(Event);
+            if constexpr (std::same_as<event_type, events::mouse>)
+            {
+              Event.MouseDX = Event.MouseNewX - State.MouseX;
+              Event.MouseDY = Event.MouseNewY - State.MouseY;
+
+              if (Event.MouseDX == 0.f && Event.MouseDY == 0.f && Event.MouseDZ == 0.f)
+                return false;
             }
+
+            Callback(Event, State);
+
+            if constexpr (requires( window_state State, event_type Event ){ State.Update(Event); })
+              State.Update(Event);
+
+            return true;
           },
           Event
         );
-
-        return true;
-      } /* End of 'PeekEvent' function */
-
-    /* Event processing function. Waits.
-     * ARGUMENTS:
-     *   - Callback. Takes event from std::visit and window state:
-     *       callable &&Callback;
-     * RETURNS:
-     *   (bool) Event existence flag.
-     */
-    template<class callable>
-      bool GetEvent( callable &&Callback )
-      {
-        /* Read event or return as empty */
-        events::any Event {std::nullopt};
-
-        if (!EventsQueue.PopWait(Event))
-          return false;
-
-        std::visit(
-          [this, Callback]( auto &Event )
-          {
-            using event_type = std::remove_cvref_t<decltype(Event)>;
-
-            if constexpr (!std::same_as<event_type, std::nullopt_t>)
-            {
-              Callback(Event, State);
-
-              if constexpr (requires( window_state State, event_type Event ){ State.Update(Event); })
-                State.Update(Event);
-            }
-          },
-          Event
-        );
-
-        return true;
       } /* End of 'GetEvent' function */
   }; /* end of 'window' class */
 
@@ -235,6 +219,92 @@ namespace anim::win
             return 0;
 
           /* Input events */
+          case WM_MOUSEMOVE:
+          {
+            POINT Coord {((short)LOWORD(lParam)), ((short)HIWORD(lParam))};
+
+            events::mouse Event
+            {
+              .MouseNewX = (float)Coord.x,
+              .MouseNewY = (float)Coord.y
+            };
+
+            Win->EventsQueue.Push(std::move(Event));
+          }
+            return 0;
+          case WM_LBUTTONUP:
+          case WM_RBUTTONUP:
+          case WM_MBUTTONUP:
+            switch (Msg)
+            {
+            case WM_LBUTTONUP:
+              wParam = VK_LBUTTON;
+              break;
+            case WM_RBUTTONUP:
+              wParam = VK_RBUTTON;
+              break;
+            case WM_MBUTTONUP:
+              wParam = VK_MBUTTON;
+              break;
+            }
+
+            lParam = 0;
+
+            [[fallthrough]];
+          case WM_KEYUP:
+          case WM_SYSKEYUP:
+            /* Check key is in range */
+            if (wParam <= (uint8_t)key::_LastValue)
+            {
+              events::keyboard Event {(key)wParam, false};
+
+              Win->EventsQueue.Push(std::move(Event));
+            }
+
+            return 0;
+          case WM_LBUTTONDOWN:
+          case WM_RBUTTONDOWN:
+          case WM_MBUTTONDOWN:
+            switch (Msg)
+            {
+            case WM_LBUTTONDOWN:
+              wParam = VK_LBUTTON;
+              break;
+            case WM_RBUTTONDOWN:
+              wParam = VK_RBUTTON;
+              break;
+            case WM_MBUTTONDOWN:
+              wParam = VK_MBUTTON;
+              break;
+            }
+
+            lParam = 0;
+
+            [[fallthrough]];
+          case WM_KEYDOWN:
+          case WM_SYSKEYDOWN:
+            /* Check key is in range */
+            if (wParam <= (uint8_t)key::_LastValue)
+            {
+              events::keyboard Event {(key)wParam, false};
+
+              /* Lock focus if it's a mouse button */
+              if (Event.Key >= key::e_MouseMin &&
+                  Event.Key <= key::e_MouseMax)
+                SetFocus(hWnd);
+
+              /* Prevent key autorepeat */
+              if (!(lParam & ((LPARAM)1u << 30)))
+              {
+                /* Process Alt+F4 */
+                if (Msg == WM_SYSKEYDOWN && Event.Key == key::eF4)
+                  SendMessageW(hWnd, WM_CLOSE, 0, 0);
+
+                Win->EventsQueue.Push(std::move(Event));
+              }
+            }
+
+            return 0;
           case WM_MOUSEWHEEL:
           {
             /* Transform coordinates to local */
@@ -246,10 +316,10 @@ namespace anim::win
             {
               .MouseNewX = (float)Coord.x,
               .MouseNewY = (float)Coord.y,
-              .MouseDZ = (float)((short)HIWORD(wParam)) * (1.f / 120.f)
+              .MouseDZ = (float)((short)HIWORD(wParam)) * (1.f / (float)WHEEL_DELTA)
             };
 
-            Win->EventsQueue.Push(Event);
+            Win->EventsQueue.Push(std::move(Event));
           }
             return 0;
           }

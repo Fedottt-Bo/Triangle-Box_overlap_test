@@ -19,6 +19,9 @@
     <Filter Include="Source Files\anim\win">
       <UniqueIdentifier>{be6c6dfd-2d07-4d84-b26b-c99459c26b95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\anim\render">
+      <UniqueIdentifier>{9611a17a-8b06-4039-8240-d5d7e22e08d2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -43,6 +46,9 @@
     </ClInclude>
     <ClInclude Include="src\anim\win\win_def.h">
       <Filter>Source Files\anim\win</Filter>
+    </ClInclude>
+    <ClInclude Include="src\anim\render\render.hpp">
+      <Filter>Source Files\anim\render</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

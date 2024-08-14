@@ -32,12 +32,14 @@ namespace anim::win
   /* Keyboard keys remapping to a custom define */
   enum class key : uint8_t
   {
+    e_MouseMin         = 0x01u,
     eLButton           = 0x01u, // VK_LBUTTON define in Windows.h
     eRButton           = 0x02u, // VK_RBUTTON define in Windows.h
     eCancel            = 0x03u, // VK_CANCEL define in Windows.h
     eMButton           = 0x04u, // VK_MBUTTON define in Windows.h
     eXButton1          = 0x05u, // VK_XBUTTON1 define in Windows.h
     eXButton2          = 0x06u, // VK_XBUTTON2 define in Windows.h
+    e_MouseMax         = 0x06u,
     /* 0x07 : reserved */
     eBack              = 0x08u, // VK_BACK define in Windows.h
     eTab               = 0x09u, // VK_TAB define in Windows.h
@@ -172,7 +174,9 @@ namespace anim::win
     eLaunchMail        = 0xB4u, // VK_LAUNCH_MAIL define in Windows.h
     eLaunchMediaSelect = 0xB5u, // VK_LAUNCH_MEDIA_SELECT define in Windows.h
     eLaunchApp1        = 0xB6u, // VK_LAUNCH_APP1 define in Windows.h
-    eLaunchApp2        = 0xB7u  // VK_LAUNCH_APP2 define in Windows.h
+    eLaunchApp2        = 0xB7u, // VK_LAUNCH_APP2 define in Windows.h
+
+    _LastValue // Amount of values
   }; /* end of 'key' enumerable */
 
   /* Auxilary definitions for compile-time keys conversion */
@@ -209,6 +213,8 @@ namespace anim::win
   template<char Char>
     constexpr key char_key {key_convertion_help::key_converter<Char>::Convert()};
 
+  using keys_mask = std::bitset<(size_t)key::_LastValue>;
+
   /* Window events namespace */
   namespace events
   {
@@ -220,11 +226,11 @@ namespace anim::win
     }; /* end of 'resize' structure */
   
     /* Button state change event */
-    struct button
+    struct keyboard
     {
-      uint8_t Index {0};  // Button index
+      key Key {0};        // Button index
       bool State {false}; // New state
-    }; /* end of 'button' structure */
+    }; /* end of 'keyboard' structure */
   
     /* Mouse moving event */
     struct mouse
@@ -243,7 +249,7 @@ namespace anim::win
     using any = std::variant<
         std::nullopt_t,
         resize,
-        button,
+        keyboard,
         mouse,
         close
       >;
@@ -257,7 +263,6 @@ namespace anim::win
   public:
     /* State data */
     uint32_t Width {0}, Height {0};   // Window size
-    using keys_mask = std::bitset<0x100>;
     keys_mask Keys {};                // Pressed keys mask
     float MouseX {0.f}, MouseY {0.f}; // Mouse window-relative coordinates 
 
@@ -281,14 +286,13 @@ namespace anim::win
     /* State updating from event function
      * ARGUMENTS:
      *   - Event:
-     *       const events::button &Event;
+     *       const events::keyboard &Event;
      * RETURNS: None.
      */
-    void Update( const events::button &Event )
+    void Update( const events::keyboard &Event )
     {
-      keys_mask UpdateMask {};
-      UpdateMask |= 1;
-      UpdateMask <<= Event.Index;
+      keys_mask UpdateMask {1};
+      UpdateMask <<= (uint8_t)Event.Key;
 
       if (Event.State)
         Keys |= UpdateMask;

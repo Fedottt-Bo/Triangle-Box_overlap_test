@@ -23,46 +23,20 @@
 // #include "box_triangle_overlap_test.hpp"
 
 #include "win/win.hpp"
+#include "render/render.hpp"
 
 namespace anim
 {
-  /* OpenGL based render */
-  class render
-  {
-  private:
-  }; /* end of 'render' class */
-
-  /* Program logic mainloop class */
-  class mainloop
-  {
-  private:
-  }; /* end of 'mainloop' class */
-
-  /* Mainloop separate thread wrapper class */
-  class mainloop_thread
-  {
-  private:
-  }; /* end of 'mainloop_thread' class */
-
   /* Scene animation class */
   class animation
   {
   private:
     /* Two main classes - window and render */
     win::window Win;
-    render Render;
+    rnd::render Render;
 
-    /* Mainloop and it's separate thread wrapper */
-    mainloop Mainloop;
-    mainloop_thread MainloopThread;
-
-  public:
-    /* The only constructor - default */
-    animation( void ) :
-      Win {L"Triangle-Box overlap test output window"},
-      Render {},
-      Mainloop {},
-      MainloopThread {}
+    /* Mainloop function */
+    void RunMainloop( void )
     {
       bool Run {true};
 
@@ -77,7 +51,16 @@ namespace anim
               Run = false;
               return;
             }
-          });
+          }, true);
+    } /* End of 'RunMainloop' function */
+
+  public:
+    /* The only constructor - default */
+    animation( void ) :
+      Win {L"Triangle-Box overlap test output window"},
+      Render {}
+    {
+      RunMainloop();
     } /* end of constructor */
 
     /* Destructor */
