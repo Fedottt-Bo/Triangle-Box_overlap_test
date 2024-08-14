@@ -247,14 +247,67 @@ namespace anim::win
   public:
     /* State data */
     uint32_t Width {0}, Height {0};   // Window size
-    std::bitset<0x100> Keys {};       // Pressed keys mask
+    using keys_mask = std::bitset<0x100>;
+    keys_mask Keys {};                // Pressed keys mask
     float MouseX {0.f}, MouseY {0.f}; // Mouse window-relative coordinates 
 
     /* Empty constructor */
     window_state( void )
     {
     } /* End of constructor */
+
+    /* State updating from event function
+     * ARGUMENTS:
+     *   - Event:
+     *       const events::resize &Event;
+     * RETURNS: None.
+     */
+    void Update( const events::resize &Event )
+    {
+      Width = Event.NewWidth;
+      Height = Event.NewHeight;
+    } /* End of 'Update' function */
+
+    /* State updating from event function
+     * ARGUMENTS:
+     *   - Event:
+     *       const events::button &Event;
+     * RETURNS: None.
+     */
+    void Update( const events::button &Event )
+    {
+      keys_mask UpdateMask {};
+      UpdateMask |= 1;
+      UpdateMask <<= Event.Index;
+
+      if (Event.State)
+        Keys |= UpdateMask;
+      else
+        Keys &= UpdateMask.flip();
+    } /* End of 'Update' function */
+
+    /* State updating from event function
+     * ARGUMENTS:
+     *   - Event:
+     *       const events::mouse &Event;
+     * RETURNS: None.
+     */
+    void Update( const events::mouse &Event )
+    {
+      MouseX = Event.MouseNewX;
+      MouseY = Event.MouseNewY;
+    } /* End of 'Update' function */
   }; /* end of 'window_state' class */
+
+  /* Events queue class */
+  class events_queue
+  {
+  public:
+    /* Empty constructor */
+    events_queue( void )
+    {
+    }
+  }; /* end of 'events_queue' class */
 } /* end of 'win' namespace */
 
 #endif /* __win_events_hpp__ */
