@@ -56,7 +56,7 @@ namespace anim::win
     window_state State {};
 
   public:
-    /* Event processing function
+    /* Event processing function. Doesn't wait if no events are queued.
      * ARGUMENTS:
      *   - Callback. Takes event from std::visit and window state:
      *       callable &&Callback;
@@ -64,7 +64,7 @@ namespace anim::win
      *   (bool) Event existence flag.
      */
     template<class callable>
-      bool ProcessEvent( callable &&Callback )
+      bool PeekEvent( callable &&Callback )
       {
         /* Read event or return as empty */
         events::any Event {std::nullopt};
@@ -89,7 +89,42 @@ namespace anim::win
         );
 
         return true;
-      } /* End of 'ProcessEvent' function */
+      } /* End of 'PeekEvent' function */
+
+    /* Event processing function. Waits.
+     * ARGUMENTS:
+     *   - Callback. Takes event from std::visit and window state:
+     *       callable &&Callback;
+     * RETURNS:
+     *   (bool) Event existence flag.
+     */
+    template<class callable>
+      bool GetEvent( callable &&Callback )
+      {
+        /* Read event or return as empty */
+        events::any Event {std::nullopt};
+
+        if (!EventsQueue.PopWait(Event))
+          return false;
+
+        std::visit(
+          [this, Callback]( auto &Event )
+          {
+            using event_type = std::remove_cvref_t<decltype(Event)>;
+
+            if constexpr (!std::same_as<event_type, std::nullopt_t>)
+            {
+              Callback(Event, State);
+
+              if constexpr (requires( window_state State, event_type Event ){ State.Update(Event); })
+                State.Update(Event);
+            }
+          },
+          Event
+        );
+
+        return true;
+      } /* End of 'GetEvent' function */
   }; /* end of 'window' class */
 
   /* Shared windows' data handling class */
@@ -149,25 +184,13 @@ namespace anim::win
         if (Win != nullptr)
           switch (Msg)
           {
+          /* Creation event */
           case WM_CREATE:
             Win->WasInit.store(true);
             Win->WasInit.notify_one();
             return 0;
-          case WM_SIZE:
-            return 0;
-          case WM_ERASEBKGND:
-            return 1;
-          case WM_PAINT:
-          {
-            PAINTSTRUCT PS;
-            HDC hDC {BeginPaint(hWnd, &PS)};
-            EndPaint(hWnd, &PS);
-          }
-            return 0;
-          case WM_TIMER:
-            return 0;
-          case WM_MOUSEWHEEL:
-            return 0;
+
+          /* Closing events */
           case WM_CLOSE:
             if (lParam != 30)
             {
@@ -179,6 +202,9 @@ namespace anim::win
 
             [[fallthrough]];
           case WM_DESTROY:
+            /* Inform about closing */
+            Win->EventsQueue.Push(events::close {true});
+
             SetWindowLongPtrW(hWnd, 0, 0);
             Win->WasInit.store(false);
             Win->WasInit.notify_one();
@@ -190,6 +216,42 @@ namespace anim::win
             break;
           case WM_QUIT:
             break;
+
+          /* Visual events */
+          case WM_SIZE:
+            return 0;
+          case WM_ERASEBKGND:
+            return 1;
+          case WM_PAINT:
+          {
+            PAINTSTRUCT PS;
+            HDC hDC {BeginPaint(hWnd, &PS)};
+            EndPaint(hWnd, &PS);
+          }
+            return 0;
+
+          /* Utility events */
+          case WM_TIMER:
+            return 0;
+
+          /* Input events */
+          case WM_MOUSEWHEEL:
+          {
+            /* Transform coordinates to local */
+            POINT Coord {((short)LOWORD(lParam)), ((short)HIWORD(lParam))};
+
+            ScreenToClient(hWnd, &Coord);
+
+            events::mouse Event
+            {
+              .MouseNewX = (float)Coord.x,
+              .MouseNewY = (float)Coord.y,
+              .MouseDZ = (float)((short)HIWORD(wParam)) * (1.f / 120.f)
+            };
+
+            Win->EventsQueue.Push(Event);
+          }
+            return 0;
           }
       }
 
@@ -227,7 +289,7 @@ namespace anim::win
       This->ThreadId.notify_all();
 
       while (true)
-        if (MSG Msg; PeekMessageW(&Msg, nullptr, 0, 0, PM_REMOVE))
+        if (MSG Msg; GetMessageW(&Msg, nullptr, 0, 0))
         {
           /* Stop loop on quit message */
           if (Msg.message == WM_QUIT)

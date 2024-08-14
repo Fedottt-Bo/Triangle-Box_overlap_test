@@ -67,7 +67,7 @@ namespace anim
       bool Run {true};
 
       while (Run)
-        Win.ProcessEvent([this, &Run]( auto &Event, const win::window_state &State ) -> void
+        Win.GetEvent([this, &Run]( auto &Event, const win::window_state &State ) -> void
           {
             using event_type = std::remove_cvref_t<decltype(Event)>;
 

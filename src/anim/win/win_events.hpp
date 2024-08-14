@@ -215,28 +215,29 @@ namespace anim::win
     /* Resize event */
     struct resize
     {
-      uint32_t NewWidth, NewHeight; // new size (zero indicates collapsing)
-      bool IsLast;                  // Indicates that this resize event is the final size
+      uint32_t NewWidth {0}, NewHeight {0}; // New size (zero indicates collapsing)
+      bool IsLast {true};                   // Indicates that this resize event is the final size
     }; /* end of 'resize' structure */
   
     /* Button state change event */
     struct button
     {
-      uint8_t Index; // Button index
-      bool State;    // New state
+      uint8_t Index {0};  // Button index
+      bool State {false}; // New state
     }; /* end of 'button' structure */
   
     /* Mouse moving event */
     struct mouse
     {
-      float MouseDX, MouseDY;     // Mouse move value
-      float MouseNewX, MouseNewY; // Mouse new position
+      float MouseDX {0.f}, MouseDY {0.f};     // Mouse move value
+      float MouseNewX {0.f}, MouseNewY {0.f}; // Mouse new position
+      float MouseDZ {0.f};                    // Mouse wheel
     }; /* end of 'mouse' structure */
 
     /* Window closing request event */
     struct close
     {
-      // Empty :)
+      bool Forced {false}; // Indicates that window has closed due to external reasons
     }; /* end of 'close' structure */
   
     using any = std::variant<
@@ -313,9 +314,10 @@ namespace anim::win
   {
   private:
     /* Basically just fully locking all resources and do not care */
-    std::mutex ResourcesSync {};             // Single syncronization primitive
-    std::deque<events::any> QueueStorage {}; // deque fullfills all our needs here
-    events::resize *LastResize {nullptr};    // Storing last resize to update corresponding flag
+    std::atomic_size_t QueuedEventsCount {0}; // Count of currently queued events.
+    std::mutex ResourcesSync {};              // Single syncronization primitive
+    std::deque<events::any> QueueStorage {};  // deque fullfills all our needs here
+    events::resize *LastResize {nullptr};     // Storing last resize to update corresponding flag
 
   public:
     /* Empty constructor */
@@ -357,6 +359,10 @@ namespace anim::win
 
           /* Add to queue */
           QueueStorage.emplace_back(std::forward<events::any>(Event));
+
+          /* Update counter */
+          if (QueuedEventsCount.fetch_add(1) == 0)
+            QueuedEventsCount.notify_one();
         },
         Event
       );
@@ -371,6 +377,46 @@ namespace anim::win
      */
     bool Pop( events::any &Event )
     {
+      /* Non-blocking check */
+      if (QueuedEventsCount.load() == 0)
+      {
+        Event.emplace<std::nullopt_t>(std::nullopt);
+        return false;
+      }
+
+      /* Update counter */
+      QueuedEventsCount.fetch_sub(1, std::memory_order::relaxed);
+
+      std::lock_guard Lock {ResourcesSync};
+
+      /* Additional check (it's cheap now, just to be sure) */
+      if (QueueStorage.empty())
+      {
+        Event.emplace<std::nullopt_t>(std::nullopt);
+        return false;
+      }
+
+      Event.swap(QueueStorage.front());
+      QueueStorage.pop_front();
+
+      return true;
+    } /* End of 'Pop' function */
+
+    /* Event retrieving function. Waits.
+     * ARGUMENTS:
+     *   - Event storage:
+     *       events::any &Event;
+     * RETURNS:
+     *   (bool) Event existence flag.
+     */
+    bool PopWait( events::any &Event )
+    {
+      /* Waiting */
+      QueuedEventsCount.wait(0);
+
+      /* Update counter */
+      QueuedEventsCount.fetch_sub(1, std::memory_order::relaxed);
+
       std::lock_guard Lock {ResourcesSync};
 
       if (QueueStorage.empty())
