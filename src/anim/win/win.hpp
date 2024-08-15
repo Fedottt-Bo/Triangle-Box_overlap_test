@@ -35,9 +35,11 @@ namespace anim::win
     friend class shared_base;
 
   private:
+    /* Initialization information */
+    std::atomic_bool WasInit {false};
+
     /* Base handles */
     HINSTANCE hInst {GetModuleHandleW(nullptr)};
-    std::atomic_bool WasInit {false};
     HWND hWnd {nullptr};
 
   public:
@@ -109,6 +111,16 @@ namespace anim::win
           Event
         );
       } /* End of 'GetEvent' function */
+
+    /* Handles getting function
+     * ARGUMENTS: None.
+     * RETURNS:
+     *   (std::pair<HINSTANCE, HWND>) Handles.
+     */
+    std::pair<HINSTANCE, HWND> GetHandles( void ) const noexcept
+    {
+      return {hInst, hWnd};
+    } /* End of 'GetHandles' function */
   }; /* end of 'window' class */
 
   /* Shared windows' data handling class */

@@ -58,7 +58,7 @@ namespace anim
     /* The only constructor - default */
     animation( void ) :
       Win {L"Triangle-Box overlap test output window"},
-      Render {}
+      Render {Win}
     {
       RunMainloop();
     } /* end of constructor */
