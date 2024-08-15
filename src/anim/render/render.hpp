@@ -18,6 +18,8 @@
 #ifndef __render_hpp__
 #define __render_hpp__
 
+#include <glew-2.2.0/include/GL/glew.h>
+
 namespace anim::rnd
 {
   /* OpenGL based render */
