@@ -32,8 +32,11 @@
 *.app
 
 # Visual Studio temporary files
-.vs/
+/.vs
 *.vcxproj.user
 
 # Build results
-out/
+/out
+
+# External libraries' binaries
+!/lib/**
