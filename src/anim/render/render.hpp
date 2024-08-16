@@ -115,7 +115,7 @@ namespace anim::rnd
     std::fs::path Path {};
 
     /* OpenGL resources */
-    uint32_t ShaderPrgId {0};
+    int GLShaderPrgId {0};
 
   public:
     /* Shader constructor.
@@ -250,9 +250,65 @@ namespace anim::rnd
         Stage.Success = true;
       }
 
+      /* Compile the whole program, if stages are valid */
+      if (!Fail)
+      {
+        GLShaderPrgId = glCreateProgram();
+
+        /* Attach shaders */
+        for (const auto &Stage : Stages)
+          if (Stage.Success)
+            glAttachShader(GLShaderPrgId, Stage.GLObjectId);
+
+        glLinkProgram(GLShaderPrgId);
+
+        /* Detach and delete shaders */
+        for (const auto &Stage : Stages)
+          if (Stage.Success)
+          {
+            glDetachShader(GLShaderPrgId, Stage.GLObjectId);
+            glDeleteShader(Stage.GLObjectId);
+          }
+
+        /* Check success */
+        {
+          int Success {0};
+          glGetProgramiv(GLShaderPrgId, GL_LINK_STATUS, &Success);
+
+          if (!Success)
+          {
+            Fail = true;
+
+            /* Get error message */
+            {
+              int LogSize {0};
+              glGetProgramiv(GLShaderPrgId, GL_INFO_LOG_LENGTH, &LogSize);
+
+              std::string Tmp {};
+              Tmp.resize(LogSize);
+
+              glGetProgramInfoLog(GLShaderPrgId, LogSize, &LogSize, Tmp.data());
+
+              std::wstring WTmp {};
+
+              LogSize = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, Tmp.c_str(), (int)Tmp.size(), nullptr, 0);
+              WTmp.resize(LogSize);
+              MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, Tmp.c_str(), (int)Tmp.size(), WTmp.data(), LogSize);
+
+              DebugOutput << WTmp;
+            }
+
+            /* Destroy program object */
+            glDeleteShader(GLShaderPrgId);
+            GLShaderPrgId = 0;
+          }
+        }
+      }
+
       std::wcout << DebugOutput.rdbuf()->str();
 
-      return;
+      if (Fail)
+        throw std::runtime_error {"Failed to load shader"};
     } /* End of constructor */
 
     /* Shader path getting function
@@ -264,6 +320,16 @@ namespace anim::rnd
     {
       return Path;
     } /* End of 'GetPath' function */
+
+    /* Shader program id getting function
+     * ARGUMENTS: None.
+     * RETURNS:
+     *   (int) Program id.
+     */
+    constexpr int GetId( void ) const noexcept
+    {
+      return GLShaderPrgId;
+    } /* End of 'GetId' function */
   }; /* end of 'shader' class */
 
   /* Shader loading manager */

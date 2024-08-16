@@ -18,7 +18,7 @@
 #version 460 core
 
 /* Inputs interpolated color */
-layout(location = 0) out vec4 InColor;
+layout(location = 0) in vec4 InColor;
 
 /* Outputs fragment color */
 layout(location = 0) out vec4 OutColor;
