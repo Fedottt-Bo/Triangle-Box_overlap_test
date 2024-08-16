@@ -32,10 +32,17 @@
 
 /* Utility */
 #include <format>
+#include <iostream>
 #include <concepts>
+#include <type_traits>
+#include <locale>
+#include <codecvt>
 
 /* Filesystem */
 #include <filesystem>
+#include <fstream>
+
+/* Additional defines for convenient filesystem usage */
 namespace std
 {
   namespace fs = filesystem;
