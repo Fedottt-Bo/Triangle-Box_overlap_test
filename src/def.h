@@ -20,7 +20,7 @@
 
 /* Storage types */
 #include <string>
-
+#include <map>
 
 /* Erorrs handling */
 #include <stdexcept>
@@ -33,6 +33,10 @@
 /* Utility */
 #include <format>
 #include <concepts>
+
+/* Filesystem */
+#include <filesystem>
+namespace std { namespace fs = filesystem; }
 
 #endif /* __def_h__ */
 

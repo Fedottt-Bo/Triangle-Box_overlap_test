@@ -18,6 +18,8 @@
 #ifndef __render_hpp__
 #define __render_hpp__
 
+#include <def.h>
+
 #include "../win/win.hpp"
 
 #define GLEW_STATIC 1
@@ -25,8 +27,8 @@
 
 namespace anim::rnd
 {
-  /* OpenGL based render */
-  class render
+  /* Render OpenGL core */
+  class core
   {
   private:
     /* Window handles */
@@ -42,7 +44,7 @@ namespace anim::rnd
      *   - Target window:
      *       window &Window;
      */
-    render( win::window &Window )
+    core( win::window &Window )
     {
       auto [hInst, hWnd] {Window.GetHandles()};
 
@@ -63,7 +65,8 @@ namespace anim::rnd
       SetPixelFormat(WindowDC, FmtIndex, &FmtDesc);
 
       GLContext = wglCreateContext(WindowDC);
-      wglMakeCurrent(WindowDC, GLContext);
+
+      BindContext();
 
       if (glewInit() != GLEW_OK)
         throw std::runtime_error {"Failed to initialize OpenGL"};
@@ -84,6 +87,119 @@ namespace anim::rnd
       // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 #endif /* _DEBUG */
     } /* End of constructor */
+
+    /* Context rebinding to the current thread function
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    void BindContext( void )
+    {
+      wglMakeCurrent(WindowDC, GLContext);
+    } /* End of 'BindContext' function */
+
+    /* Destructor */
+    ~core( void )
+    {
+      wglMakeCurrent(nullptr, nullptr);
+
+      wglDeleteContext(GLContext);
+      ReleaseDC(hWnd, WindowDC);
+    } /* End of destructor */
+  }; /* end of 'core' class */
+
+  /* Shader loading manager */
+  class shaders_manager
+  {
+  private:
+    /* Single shader wrapper */
+    class shader
+    {
+    private:
+      std::fs::path Path {};
+
+    public:
+      /* Shader constructor.
+       * ARGUMENTS:
+       *   - Shader root-relative path:
+       *       const std::fs::path &Path;
+       */
+      shader( const std::fs::path &Path ) :
+        Path {Path}
+      {
+      } /* End of constructor */
+
+      /* Shader path getting function
+       * ARGUMENTS: None.
+       * RETURNS:
+       *   (const std::fs::path &) Path constant reference.
+       */
+      constexpr const std::fs::path &GetPath( void ) const noexcept
+      {
+        return Path;
+      } /* End of 'GetPath' function */
+    }; /* end of 'shader' class */
+
+    /* Shaders storage cache */
+    std::map<std::reference_wrapper<const std::fs::path>, shader> ShadersStorage {};
+
+    /* Shaders filesystem info */
+    std::fs::path ShadersRoot;
+
+  public:
+    /* Constructor.
+     * ARGUMENTS:
+     *   - Shaders search root path:
+     *       std::fs::path &&SearchRoot;
+     */
+    shaders_manager( std::fs::path &&SearchRoot ) :
+      ShadersRoot {std::forward<std::fs::path>(SearchRoot)}
+    {
+    } /* End of constructor */
+
+    /* Shader loading function.
+     * ARGUMENTS:
+     *   - Shader root-relative path:
+     *       path_type Path;
+     * RETURNS:
+     *   (shader &) Loaded shader.
+     */
+    shader &Load( const std::fs::path &Path )
+    {
+      if (auto It {ShadersStorage.find(Path)}; It != ShadersStorage.end())
+        return It->second;
+
+      shader Tmp {Path};
+
+      auto [It, Flag] {ShadersStorage.emplace(Path, std::move(Tmp))};
+      const_cast<std::remove_const_t<decltype(It->first)> &>(It->first) = It->second.GetPath();
+
+      return It->second;
+    } /* End of 'Load' function */
+  }; /* end of 'shaders_manager' class */
+
+  /* OpenGL based render */
+  class render
+  {
+  private:
+    core Core;
+    shaders_manager Shaders;
+
+  public:
+    /* Constructor from target window
+     * ARGUMENST:
+     *   - Target window:
+     *       window &Window;
+     */
+    render( win::window &Window ) :
+      Core {Window},
+      Shaders {L"./bin/"}
+    {
+    } /* End of constructor */
+
+    /* Destructor */
+    ~render( void )
+    {
+    } /* End of destructor */
   }; /* end of 'render' class */
 } /* end of 'anim::rnd' namespace */
 
