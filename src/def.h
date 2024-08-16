@@ -36,7 +36,15 @@
 
 /* Filesystem */
 #include <filesystem>
-namespace std { namespace fs = filesystem; }
+namespace std
+{
+  namespace fs = filesystem;
+
+  namespace filesystem
+  {
+    using path_string_view = basic_string_view<path::string_type::value_type>;
+  }
+}
 
 #endif /* __def_h__ */
 

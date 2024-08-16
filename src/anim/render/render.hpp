@@ -115,17 +115,57 @@ namespace anim::rnd
     class shader
     {
     private:
+      /* Shader information */
       std::fs::path Path {};
+
+      /* OpenGL resources */
+      uint32_t ShaderPrgId {0};
 
     public:
       /* Shader constructor.
        * ARGUMENTS:
        *   - Shader root-relative path:
-       *       const std::fs::path &Path;
+       *       std::fs::path &&SrcPath;
        */
-      shader( const std::fs::path &Path ) :
-        Path {Path}
+      shader( std::fs::path &&SrcPath ) :
+        Path {std::forward<std::fs::path>(SrcPath)}
       {
+        /* Shader stage information structure */
+        struct stage_desc
+        {
+          bool Required;                 // Indicates that this stage need for a complete program
+          std::fs::path_string_view Ext; // Particular stage file extension
+          uint32_t GLShaderIndex;        // OpenGl stage index
+        }; /* end of 'stage_desc' structure */
+
+        /* Standard graphics stages descriptions array */
+        constexpr static stage_desc StagesDesc[]
+        {
+          {true,  L".vert", GL_VERTEX_SHADER},
+          {false, L".tesc", GL_TESS_CONTROL_SHADER},
+          {false, L".tese", GL_TESS_EVALUATION_SHADER},
+          {false, L".geom", GL_GEOMETRY_SHADER},
+          {true,  L".frag", GL_FRAGMENT_SHADER}
+        };
+
+        /* Created stage information structure */
+        struct stage_info
+        {
+          uint32_t GLObjectId {0}; // Created resource object id
+          std::string Source {};   // Shader source temporary storage
+          bool Success {false};    // Creation success flag
+        }; /* end of 'stage_info' structure */
+
+        /* Created stages */
+        stage_info Stages[std::size(StagesDesc)] {};
+
+        std::wstringstream DebugOutput {};
+
+        /* Go through all stages */
+        for (size_t i {0}; i < std::size(StagesDesc); i++)
+        {
+          
+        }
       } /* End of constructor */
 
       /* Shader path getting function
@@ -158,19 +198,32 @@ namespace anim::rnd
 
     /* Shader loading function.
      * ARGUMENTS:
-     *   - Shader root-relative path:
-     *       path_type Path;
+     *   - Shader root-relative path (copy is intended):
+     *       std::fs::path Path;
      * RETURNS:
      *   (shader &) Loaded shader.
      */
-    shader &Load( const std::fs::path &Path )
+    shader &Load( std::fs::path Path )
     {
+      /* Deduce actual file name */
+      Path = ShadersRoot / Path;
+
+      if (!Path.has_filename())
+      {
+        if (!Path.has_parent_path())
+          throw std::fs::filesystem_error {"Cannot accept empty file path", Path, {}};
+
+        Path.replace_filename(Path.parent_path().filename());
+      }
+      else if (Path.has_extension())
+        throw std::fs::filesystem_error {"File extension deduces automatically", Path, {}};
+
       if (auto It {ShadersStorage.find(Path)}; It != ShadersStorage.end())
         return It->second;
 
-      shader Tmp {Path};
+      shader Tmp {std::move(Path)};
 
-      auto [It, Flag] {ShadersStorage.emplace(Path, std::move(Tmp))};
+      auto [It, Flag] {ShadersStorage.emplace(Tmp.GetPath(), std::move(Tmp))};
       const_cast<std::remove_const_t<decltype(It->first)> &>(It->first) = It->second.GetPath();
 
       return It->second;
