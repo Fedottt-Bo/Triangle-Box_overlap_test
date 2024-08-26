@@ -38,20 +38,49 @@ namespace anim
     /* Mainloop function */
     void RunMainloop( void )
     {
-      bool Run {true};
+      do
+      {
+        bool Run {true};
 
-      while (Run)
-        Win.GetEvent([this, &Run]( auto &Event, const win::window_state &State ) -> void
-          {
-            using event_type = std::remove_cvref_t<decltype(Event)>;
+        /* Process all accumulated events */
+        {
+          bool ExtendRun {false};
 
-            /* End mainloop on close event */
-            if constexpr (std::same_as<event_type, win::events::close>)
+          const auto ProcessEvent {[&]( bool Wait ) -> bool
             {
-              Run = false;
-              return;
-            }
-          }, true);
+              return Win.GetEvent([&]( auto &Event, const win::window_state &State ) -> void
+              {
+                using event_type = std::remove_cvref_t<decltype(Event)>;
+              
+                /* End mainloop on close event */
+                if constexpr (std::same_as<event_type, win::events::close>)
+                {
+                  Run = false;
+                  return;
+                }
+              
+                /* End mainloop on close event */
+                if constexpr (std::same_as<event_type, win::events::resize>)
+                {
+                  ExtendRun = !Event.IsLast;
+              
+                  if (Event.IsLast)
+                    Render.Resize(Event.NewWidth, Event.NewHeight);
+              
+                  return;
+                }
+              }, Wait);
+            }};
+
+          while (Run && (ProcessEvent(ExtendRun) || ExtendRun))
+            ;
+        }
+
+        if (!Run)
+          break;
+
+        Render.Render();
+      } while (true);
     } /* End of 'RunMainloop' function */
 
   public:

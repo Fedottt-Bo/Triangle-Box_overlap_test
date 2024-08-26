@@ -38,6 +38,112 @@ namespace anim::rnd
     /* Render base handles */
     HGLRC GLContext {};
 
+    /* Debug output function.
+     * ARGUMENTS:
+     *   - source APi or device:
+     *      UINT Source;
+     *   - error type:
+     *      UINT Type;
+     *   - error message id:
+     *      UINT Id, 
+     *   - message severity:
+     *      UINT severity, 
+     *   - message text length:
+     *      INT Length, 
+     *   - message text:
+     *      CHAR *Message, 
+     *   - user addon parameters pointer:
+     *      VOID *UserParam;
+     * RETURNS: None.
+     */
+    static void APIENTRY glDebugOutput( unsigned Source, unsigned Type, unsigned Id, unsigned Severity,
+                                        int Length, const char *Message, const void *UserParam )
+    {
+      /* Ignore non-significant error/warning codes */
+      switch (Id)
+      {
+      case 131169:
+      case 131185:
+      case 131218:
+      case 131204:
+        return;
+      }
+
+      std::stringstream Buf {};
+
+      Buf << std::format("Debug message ({}) {}\n", Id, Message);
+      switch (Source)
+      {
+      case GL_DEBUG_SOURCE_API:
+        Buf << "Source: API\n";
+        break;
+      case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        Buf << "Source: Window System\n";
+        break;
+      case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        Buf << "Source: Shader Compiler\n";
+        break;
+      case GL_DEBUG_SOURCE_THIRD_PARTY:
+        Buf << "Source: Third Party\n";
+        break;
+      case GL_DEBUG_SOURCE_APPLICATION:
+        Buf << "Source: Application\n";
+        break;
+      case GL_DEBUG_SOURCE_OTHER:
+        Buf << "Source: Other\n";
+        break;
+      }
+
+      switch (Type)
+      {
+      case GL_DEBUG_TYPE_ERROR:
+        Buf << "Type: Error\n";
+        break;
+      case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        Buf << "Type: Deprecated Behaviour\n";
+        break;
+      case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        Buf << "Type: Undefined Behaviour\n";
+        break; 
+      case GL_DEBUG_TYPE_PORTABILITY:
+        Buf << "Type: Portability\n";
+        break;
+      case GL_DEBUG_TYPE_PERFORMANCE:
+        Buf << "Type: Performance\n";
+        break;
+      case GL_DEBUG_TYPE_MARKER:
+        Buf << "Type: Marker\n";
+        break;
+      case GL_DEBUG_TYPE_PUSH_GROUP:
+        Buf << "Type: Push Group\n";
+        break;
+      case GL_DEBUG_TYPE_POP_GROUP:
+        Buf << "Type: Pop Group\n";
+        break;
+      case GL_DEBUG_TYPE_OTHER:
+        Buf << "Type: Other\n";
+        break;
+      }
+    
+      switch (Severity)
+      {
+      case GL_DEBUG_SEVERITY_HIGH:
+        Buf << "Severity: high\n\n";
+        break;
+      case GL_DEBUG_SEVERITY_MEDIUM:
+        Buf << "Severity: medium\n\n";
+        break;
+      case GL_DEBUG_SEVERITY_LOW:
+        Buf << "Severity: low\n\n";
+        break;
+      case GL_DEBUG_SEVERITY_NOTIFICATION:
+        Buf << "Severity: notification\n\n";
+        break;
+      }
+    
+      std::cout << Buf.rdbuf()->str();
+    } /* End of 'glDebugOutput' function */
+
   public:
     /* Constructor from target window
      * ARGUMENST:
@@ -81,10 +187,10 @@ namespace anim::rnd
       glPrimitiveRestartIndex(-1);
 
 #ifdef _DEBUG
-      // glEnable(GL_DEBUG_OUTPUT);
-      // glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-      // glDebugMessageCallback(GLDebugOutput, NULL);
-      // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+      glEnable(GL_DEBUG_OUTPUT);
+      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+      glDebugMessageCallback(glDebugOutput, NULL);
+      glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 #endif /* _DEBUG */
     } /* End of constructor */
 
@@ -105,6 +211,16 @@ namespace anim::rnd
       wglDeleteContext(GLContext);
       ReleaseDC(hWnd, WindowDC);
     } /* End of destructor */
+
+    /* Frame presentation function
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    void Present( void )
+    {
+      glFinish();
+      wglSwapLayerBuffers(WindowDC, WGL_SWAP_MAIN_PLANE);
+    } /* End of 'Present' function */
   }; /* end of 'core' class */
 
   /* Single shader wrapper */
@@ -409,15 +525,6 @@ namespace anim::rnd
       return;
     } /* End of constructor */
 
-    /* Frame rendering function
-     * ARGUMENTS: None.
-     * RETURNS: None.
-     */
-    void Render( void )
-    {
-      
-    } /* End of 'Render' function */
-
     /* Destructor */
     ~render( void )
     {
@@ -473,6 +580,33 @@ namespace anim::rnd
     friend primitive;
     std::array<std::set<primitive *>, (size_t)primitive::type::_LastValue>
       PrimitivesPools {};
+
+  private:
+    /* Render frames */
+    
+
+  public:
+    /* Resize responce
+     * ARGUMENTS:
+     *   - New size:
+     *       uint32_t W, H;
+     * RETURNS:
+     *   (bool) Render availability flag.
+     */
+    bool Resize( uint32_t W, uint32_t H )
+    {
+      return W != 0 && H != 0;
+    } /* End of 'Resize' function */
+
+  public:
+    /* Frame rendering function
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    void Render( void )
+    {
+      Core.Present();
+    } /* End of 'Render' function */
   }; /* end of 'render' class */
 } /* end of 'anim::rnd' namespace */
 

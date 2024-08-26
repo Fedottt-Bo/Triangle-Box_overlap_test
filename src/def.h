@@ -25,6 +25,13 @@
 #include <set>
 #include <map>
 
+/* Time */
+#include <chrono>
+namespace std
+{
+  using namespace chrono;
+}
+
 /* Erorrs handling */
 #include <stdexcept>
 
