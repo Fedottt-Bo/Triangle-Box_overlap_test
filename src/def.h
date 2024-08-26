@@ -19,7 +19,10 @@
 #define __def_h__
 
 /* Storage types */
+#include <array>
 #include <string>
+#include <list>
+#include <set>
 #include <map>
 
 /* Erorrs handling */

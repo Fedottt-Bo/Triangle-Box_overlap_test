@@ -60,6 +60,28 @@ namespace anim
       Win {L"Triangle-Box overlap test output window"},
       Render {Win}
     {
+      class test_primitive : public rnd::render::primitive
+      {
+      public:
+        /* Class constructor from parent render instance
+         * ARGUMENTS:
+         *   - Parent reference:
+         *       render &Parent;
+         */
+        test_primitive( rnd::render &Render ) :
+          rnd::render::primitive {Render, rnd::render::primitive::type::eTransparent}
+        {
+        } /* End of constructor */
+
+        /* Primitive render function
+         * ARGUMENTS: None.
+         * RETURNS: None.
+         */
+        void Render( void ) override
+        {
+        } /* End of 'Render' function */
+      } TestPrim {Render};
+
       RunMainloop();
     } /* end of constructor */
 

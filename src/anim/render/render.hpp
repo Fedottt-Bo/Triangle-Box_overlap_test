@@ -409,10 +409,70 @@ namespace anim::rnd
       return;
     } /* End of constructor */
 
+    /* Frame rendering function
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    void Render( void )
+    {
+      
+    } /* End of 'Render' function */
+
     /* Destructor */
     ~render( void )
     {
     } /* End of destructor */
+
+  public:
+    /* Rendering primitive */
+    class primitive abstract
+    {
+    public:
+      /* Type enumerable */
+      enum class type
+      {
+        eTransparent, // Main type for this project - transparency approximation
+
+        _LastValue
+      }; /* end of 'type' enumerable */
+
+    private:
+      /* Initialization data */
+      render &Parent;
+      type Type;
+
+    public:
+      /* Class constructor from parent render instance
+       * ARGUMENTS:
+       *   - Parent reference:
+       *       render &Parent;
+       *   - Primitive type:
+       *       type Type;
+       */
+      primitive( render &Parent, type Type ) :
+        Parent {Parent}, Type {Type}
+      {
+        Parent.PrimitivesPools[(size_t)Type].emplace(this);
+      } /* End of constructor */
+
+      /* Primitive render function
+       * ARGUMENTS: None.
+       * RETURNS: None.
+       */
+      virtual void Render( void ) = 0;
+
+      /* Destructor */
+      ~primitive( void )
+      {
+        Parent.PrimitivesPools[(size_t)Type].erase(Parent.PrimitivesPools[(size_t)Type].find(this));
+      } /* End of destructor */
+    }; /* end of 'primitive' class */
+
+  private:
+    /* Primitives pool storage */
+    friend primitive;
+    std::array<std::set<primitive *>, (size_t)primitive::type::_LastValue>
+      PrimitivesPools {};
   }; /* end of 'render' class */
 } /* end of 'anim::rnd' namespace */
 
