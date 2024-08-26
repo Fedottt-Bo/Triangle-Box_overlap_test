@@ -503,6 +503,138 @@ namespace anim::rnd
     } /* End of 'Load' function */
   }; /* end of 'shaders_manager' class */
 
+  /* Render buffer wrapper */
+  class buffer
+  {
+  private:
+    uint32_t OpenGLId;  // Resource id
+    size_t Size;        // Buffer size
+
+  public:
+    /* Buffer type enumerable */
+    enum class type
+    {
+      eUniform,       // Constant data storage
+      eStorageRW,     // Big or/and shader modifiable data storage with CPU read/write
+      eStorageWrite,  // Big or/and shader modifiable data storage with CPU write
+      eStorageRead,   // Big or/and shader modifiable data storage with CPU read
+      eStorageStatic, // Big or/and shader modifiable data storage with CPU read/write
+      eVertex,        // Vertices data buffer
+      eIndex          // Indices data buffer
+    }; /* end of 'type' enumerable */
+
+  private:
+    type Type; // Type
+
+    /* OpenGL base types */
+    uint32_t BufferBindType;
+    uint32_t AccessType;
+
+    /* Initialization base
+     * ARGUMENTS:
+     *   - Initial data pointer (default: nullptr):
+     *       const void *Data;
+     * RETURNS: None.
+     */
+    void InitBase( const void *Data = nullptr )
+    {
+      glCreateBuffers(1, &OpenGLId);
+
+      switch (Type)
+      {
+      case type::eUniform:
+        BufferBindType = GL_UNIFORM_BUFFER;
+        AccessType = GL_STATIC_DRAW;
+        break;
+      case type::eStorageRW:
+        BufferBindType = GL_SHADER_STORAGE_BUFFER;
+        AccessType = GL_DYNAMIC_COPY;
+        break;
+      case type::eStorageWrite:
+        BufferBindType = GL_SHADER_STORAGE_BUFFER;
+        AccessType = GL_DYNAMIC_DRAW;
+        break;
+      case type::eStorageRead:
+        BufferBindType = GL_SHADER_STORAGE_BUFFER;
+        AccessType = GL_DYNAMIC_READ;
+        break;
+      case type::eStorageStatic:
+        BufferBindType = GL_SHADER_STORAGE_BUFFER;
+        AccessType = GL_STATIC_DRAW;
+        break;
+      case type::eVertex:
+        BufferBindType = GL_ARRAY_BUFFER;
+        AccessType = GL_STATIC_DRAW;
+        break;
+      case type::eIndex:
+        BufferBindType = GL_ELEMENT_ARRAY_BUFFER;
+        AccessType = GL_STATIC_DRAW;
+        break;
+
+      default:
+        std::unreachable();
+      }
+
+      glBindBuffer(BufferBindType, OpenGLId);
+      glBufferData(BufferBindType, Size, Data, AccessType);
+    } /* End of 'InitBase' function */
+
+  public:
+    /* Constructor from only size.
+     * ARGUMENTS:
+     *   - Size:
+     *       size_t Size;
+     *   - Type:
+     *       type Type;
+     */
+    buffer( size_t Size, type Type ) :
+      Size {Size}, Type {Type}
+    {
+      InitBase();
+    } /* End of constructor */
+
+    /* Constructor from initial data span.
+     * ARGUMENTS:
+     *   - Type:
+     *       type Type;
+     *   - Data span:
+     *       std::span<const uint8_t> Data;
+     */
+    buffer( type Type, std::span<const uint8_t> Data ) :
+      Size {Data.size()}, Type {Type}
+    {
+      InitBase(Data.data());
+    } /* End of constructor */
+
+    /* Data upload function
+     * ARGUMENTS:
+     *   - Data span:
+     *       std::span<const uint8_t> Data;
+     *   - Offset (default: 0):
+     *       size_t Offset;
+     * RETURNS: None.
+     */
+    void Upload( std::span<const uint8_t> Data, size_t Offset = 0 )
+    {
+      glBindBuffer(BufferBindType, OpenGLId);
+      glBufferSubData(BufferBindType, Offset, Data.size(), Data.data());
+    } /* End of 'Upload' function */
+
+    /* Data readback function
+     * ARGUMENTS:
+     *   - Data write span:
+     *       std::span<uint8_t> Data;
+     *   - Offset (default: 0):
+     *       size_t Offset;
+     * RETURNS: None.
+     */
+    void Readback( std::span<uint8_t> Data, size_t Offset = 0 )
+    {
+      glBindBuffer(BufferBindType, OpenGLId);
+      glGetBufferSubData(BufferBindType, Offset, Data.size(), Data.data());
+    } /* End of 'Readback' function */
+  }; /* end of 'buffer' class */
+
   /* OpenGL based render */
   class render
   {

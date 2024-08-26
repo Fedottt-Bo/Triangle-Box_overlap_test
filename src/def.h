@@ -24,6 +24,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include <span>
 
 /* Time */
 #include <chrono>
