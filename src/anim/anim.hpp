@@ -91,6 +91,9 @@ namespace anim
     {
       class test_primitive : public rnd::render::primitive
       {
+      private:
+        rnd::shader *Shader {nullptr};
+
       public:
         /* Class constructor from parent render instance
          * ARGUMENTS:
@@ -100,6 +103,7 @@ namespace anim
         test_primitive( rnd::render &Render ) :
           rnd::render::primitive {Render, rnd::render::primitive::type::eTransparent}
         {
+          Shader = &Render.GetShadersManager().Load("simple_geom/shd");
         } /* End of constructor */
 
         /* Primitive render function
@@ -108,6 +112,9 @@ namespace anim
          */
         void Render( void ) override
         {
+          glUseProgram(Shader->GetId());
+
+          glDrawArrays(GL_POINTS, 0, 1);
         } /* End of 'Render' function */
       } TestPrim {Render};
 

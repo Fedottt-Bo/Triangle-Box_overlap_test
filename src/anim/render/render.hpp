@@ -652,15 +652,22 @@ namespace anim::rnd
       Core {Window},
       Shaders {L"./bin/"}
     {
-      shader &Shd {Shaders.Load("simple_geom/shd")};
-
-      return;
     } /* End of constructor */
 
     /* Destructor */
     ~render( void )
     {
     } /* End of destructor */
+
+    /* Core getting function
+     * ARGUMENTS: None.
+     * RETURNS:
+     *   (core &) Core reference.
+     */
+    constexpr shaders_manager &GetShadersManager( void ) noexcept
+    {
+      return Shaders;
+    } /* End of 'GetShadersManager' function */
 
   public:
     /* Rendering primitive */
@@ -737,6 +744,11 @@ namespace anim::rnd
      */
     void Render( void )
     {
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      for (auto &Prim : PrimitivesPools[(size_t)primitive::type::eTransparent])
+        Prim->Render();
+
       Core.Present();
     } /* End of 'Render' function */
   }; /* end of 'render' class */
