@@ -349,7 +349,7 @@ namespace anim::win
           /* Lock */
           std::lock_guard Lock {ResourcesSync};
 
-          /* Update flag and pointer for resize event */
+          /* Update flag */
           if constexpr (std::same_as<event_type, events::resize>)
           {
             /* Ensure flag is correct */
@@ -358,11 +358,17 @@ namespace anim::win
             if (LastResize != nullptr)
               LastResize->IsLast = false;
 
-            LastResize = &Event;
+            LastResize = nullptr;
           }
 
           /* Add to queue */
-          QueueStorage.emplace_back(std::forward<events::any>(Event));
+          auto &AddedEvent {QueueStorage.emplace_back(std::forward<events::any>(Event))};
+
+          /* Update pointer for resize event */
+          if constexpr (std::same_as<event_type, events::resize>)
+          {
+            LastResize = &std::get<events::resize>(AddedEvent);
+          }
 
           /* Update counter */
           if (QueuedEventsCount.fetch_add(1) == 0)
@@ -399,6 +405,19 @@ namespace anim::win
         Event.emplace<std::nullopt_t>(std::nullopt);
         return false;
       }
+
+      std::visit([this]( auto &Event )
+        {
+          using event_type = std::remove_cvref_t<decltype(Event)>;
+
+          if constexpr (std::same_as<event_type, events::resize>)
+          {
+            if (Event.IsLast)
+              LastResize = nullptr;
+          }
+        },
+        QueueStorage.front()
+      );
 
       Event.swap(QueueStorage.front());
       QueueStorage.pop_front();

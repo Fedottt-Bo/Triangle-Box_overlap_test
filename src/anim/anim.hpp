@@ -18,13 +18,14 @@
 #ifndef __anim_hpp__
 #define __anim_hpp__
 
+/* Base definitions */
 #include <def.h>
 
-// #include "box_triangle_overlap_test.hpp"
-
+/* Animation systems */
 #include "win/win.hpp"
 #include "render/render.hpp"
 
+/* Animation namespace */
 namespace anim
 {
   /* Scene animation class */

@@ -221,6 +221,16 @@ namespace anim::rnd
       glFinish();
       wglSwapLayerBuffers(WindowDC, WGL_SWAP_MAIN_PLANE);
     } /* End of 'Present' function */
+
+    /* Window getting function
+     * ARGUMENTS: None.
+     * RETURNS:
+     *   (HWND) Window header.
+     */
+    HWND GetWindow( void ) const noexcept
+    {
+      return hWnd;
+    } /* Enf of 'GetWindow' function */
   }; /* end of 'core' class */
 
   /* Single shader wrapper */
@@ -722,7 +732,33 @@ namespace anim::rnd
 
   private:
     /* Render frames */
-    
+    uint32_t Width {0}, Height {0}; // Viewport current size
+    HBITMAP RenderTargetBitmap;     // Render target bitmap
+
+    /* Resize - destruction step
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    void ResizeStepDestroy( void )
+    {
+      DeleteObject(RenderTargetBitmap);
+      RenderTargetBitmap = nullptr;
+    } /* End of 'ResizeStepDestroy' function */
+
+    /* Resize - creation step
+     * ARGUMENTS: None.
+     * RETURNS: None.
+     */
+    void ResizeStepCreate( void )
+    {
+      auto hDC = GetDC(Core.GetWindow());
+
+      RenderTargetBitmap = CreateCompatibleBitmap(hDC, Width, Height);
+      SelectObject(hDC, RenderTargetBitmap);
+
+      ReleaseDC(Core.GetWindow(), hDC);
+      glViewport(0, 0, Width, Height);
+    } /* End of 'ResizeStepDestroy' function */
 
   public:
     /* Resize responce
@@ -734,6 +770,21 @@ namespace anim::rnd
      */
     bool Resize( uint32_t W, uint32_t H )
     {
+      const bool NonZero {W != 0 && H != 0};
+
+      /* Return if size is the same */
+      if (Width == W && Height == H)
+        return NonZero;
+
+      if (Width != 0 && Height != 0)
+        ResizeStepDestroy();
+
+      Width = W;
+      Height = H;
+
+      if (NonZero)
+        ResizeStepCreate();
+
       return W != 0 && H != 0;
     } /* End of 'Resize' function */
 

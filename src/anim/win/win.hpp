@@ -215,6 +215,7 @@ namespace anim::win
 
           /* Visual events */
           case WM_SIZE:
+            Win->EventsQueue.Push(events::resize {LOWORD(lParam), HIWORD(lParam)});
             return 0;
           case WM_ERASEBKGND:
             return 1;
